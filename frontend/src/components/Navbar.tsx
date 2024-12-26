@@ -20,7 +20,7 @@ export function Navbar() {
           <Link to="/" className="text-xl font-bold">
             Business Finder
           </Link>
-          <Search />
+          {/* <Search /> */}
         </div>
 
         <div className="flex items-center space-x-4">
