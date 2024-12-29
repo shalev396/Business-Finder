@@ -24,14 +24,17 @@ export function BusinessCard({ business }: BusinessCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const isOwner =
-    user?._id ===
-    (typeof business.owner === "string" ? business.owner : business.owner._id);
-  const isSubscribed =
-    user &&
-    business.subscribers.some(
-      (sub) => (typeof sub === "string" ? sub : sub._id) === user._id
-    );
+  const isOwner = user
+    ? user._id ===
+      (typeof business.owner === "string"
+        ? business.owner
+        : business.owner?._id || null)
+    : false;
+  const isSubscribed = user
+    ? (business.subscribers || []).some(
+        (sub) => (typeof sub === "string" ? sub : sub?._id) === user._id
+      )
+    : false;
 
   const subscribeMutation = useMutation({
     mutationFn: () => businessAPI.subscribeToBusiness(business._id),

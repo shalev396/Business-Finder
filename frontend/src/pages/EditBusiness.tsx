@@ -63,7 +63,8 @@ export default function EditBusiness() {
   }, [business]);
 
   const updateMutation = useMutation({
-    mutationFn: () => businessAPI.updateBusiness(id!, formData),
+    mutationFn: (data: typeof formData) =>
+      businessAPI.updateBusiness(id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["business", id] });
       toast({
@@ -84,7 +85,25 @@ export default function EditBusiness() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateMutation.mutate();
+
+    // Validate required fields
+    if (!formData.name || !formData.description || !formData.category) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please fill in all required fields.",
+      });
+      return;
+    }
+
+    // Trim whitespace from fields
+    const trimmedData = {
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      category: formData.category.trim(),
+    };
+
+    updateMutation.mutate(trimmedData);
   };
 
   if (isLoading) {

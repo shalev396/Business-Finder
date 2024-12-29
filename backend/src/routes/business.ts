@@ -142,25 +142,36 @@ router.put("/:id", authenticate, async (req, res) => {
       req.params.id,
       { name, description, category },
       { new: true }
-    );
+    )
+      .populate("owner", "name")
+      .populate("subscribers", "name");
 
-    // Notify subscribers about the update
-    const io = req.app.get("io");
-    io.to(`business:${business._id}`).emit("businessUpdated", {
-      type: "update",
-      businessId: business._id,
-      businessName: business.name,
-      message: "Business details have been updated",
-    });
+    // Try to notify subscribers about the update, but don't fail if socket.io is not available
+    try {
+      const io = req.app.get("io");
+      if (io) {
+        io.to(`business:${business._id}`).emit("businessUpdated", {
+          type: "update",
+          businessId: business._id,
+          businessName: business.name,
+          message: "Business details have been updated",
+        });
+      }
+    } catch (socketError) {
+      console.error("Socket notification failed:", socketError);
+      // Continue with the response even if socket notification fails
+    }
 
     res.json({
       success: true,
       data: updatedBusiness,
     });
   } catch (error) {
+    console.error("Error updating business:", error);
     res.status(500).json({
       success: false,
       message: "Error updating business",
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -187,14 +198,21 @@ router.delete("/:id", authenticate, async (req, res) => {
       });
     }
 
-    // Notify subscribers about the deletion
-    const io = req.app.get("io");
-    io.to(`business:${business._id}`).emit("businessDeleted", {
-      type: "delete",
-      businessId: business._id,
-      businessName: business.name,
-      message: "Business has been deleted",
-    });
+    // Try to notify subscribers about the deletion, but don't fail if socket.io is not available
+    try {
+      const io = req.app.get("io");
+      if (io) {
+        io.to(`business:${business._id}`).emit("businessDeleted", {
+          type: "delete",
+          businessId: business._id,
+          businessName: business.name,
+          message: "Business has been deleted",
+        });
+      }
+    } catch (socketError) {
+      console.error("Socket notification failed:", socketError);
+      // Continue with the deletion even if socket notification fails
+    }
 
     await business.deleteOne();
 
@@ -203,9 +221,11 @@ router.delete("/:id", authenticate, async (req, res) => {
       data: null,
     });
   } catch (error) {
+    console.error("Error deleting business:", error);
     res.status(500).json({
       success: false,
       message: "Error deleting business",
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
